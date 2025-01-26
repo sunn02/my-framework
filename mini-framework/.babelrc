@@ -3,8 +3,8 @@
       [
         "@babel/plugin-transform-react-jsx",
         {
-          "pragma": "miniFramework.createElement", // Cambia el pragma para usar tu framework
-          "throwIfNamespace": false // Permite usar nombres no estándar en el espacio de nombres
+          "pragma": "miniFramework.createElement", 
+          "throwIfNamespace": false 
         }
       ]
     ]

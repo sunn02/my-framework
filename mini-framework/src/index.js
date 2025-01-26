@@ -35,7 +35,6 @@ export const AppStore = {
     }
   };
   
-  
 
 export const miniFramework = {
     createElement(type, props, ...children) {
@@ -50,33 +49,72 @@ export const miniFramework = {
   };
   
 
-export const render = (frameworkEl, container) => {
-    if (["string", "number"].includes(typeof frameworkEl)) {
-      container?.appendChild(document.createTextNode(frameworkEl?.toString()));
+  export const render = (frameworkEl, container) => {
+    if (!container) return;
+    diff(container._virtualDOM, frameworkEl, container);
+    container._virtualDOM = frameworkEl; // Store the new virtual DOM for diffing later
+  };
+  
+  function createRealDOM(node) {
+    if (typeof node === 'string' || typeof node === 'number') {
+      return document.createTextNode(node);
+    }
+  
+    const domElement = document.createElement(node.type);
+  
+    Object.keys(node.props)
+      .filter((key) => key !== 'children')
+      .forEach((prop) => {
+        if (prop.startsWith('on')) {
+          const event = prop.substring(2).toLowerCase();
+          domElement.addEventListener(event, node.props[prop]);
+        } else {
+          domElement[prop] = node.props[prop];
+        }
+      });
+  
+    node.props.children.forEach((child) => {
+      domElement.appendChild(createRealDOM(child));
+    });
+  
+    return domElement;
+  }
+  
+  function diff(oldNode, newNode, container) {
+    if (!oldNode && newNode) {
+      container.appendChild(createRealDOM(newNode)); 
       return;
     }
   
-    const actualDOMElement = document.createElement(frameworkEl.type);
+    if (!newNode) {
+      container.removeChild(oldNode);
+      return;
+    }
   
-    // Apply Props to actual DOM Element
-    Object.keys(frameworkEl?.props)
-      .filter((key) => key !== "children")
-      .forEach((property) => {
-        if (property.startsWith("on")) {
-            const event = property.toLowerCase().substring(2);
-            actualDOMElement.addEventListener(event, frameworkEl.props[property]);
-          } else {
-            actualDOMElement[property] = frameworkEl.props[property];
-          }
-      });
+    if (typeof oldNode !== typeof newNode || oldNode.type !== newNode.type) {
+      container.replaceChild(createRealDOM(newNode), oldNode);
+      return;
+    }
   
-    // Render children inside this element
-    frameworkEl?.props?.children.forEach((child) => {
-      render(child, actualDOMElement);
+    if (typeof newNode === 'string' || typeof newNode === 'number') {
+      if (oldNode.nodeValue !== newNode) {
+        oldNode.nodeValue = newNode;
+      }
+      return;
+    }
+  
+    const oldChildren = oldNode.childNodes || [];
+    const newChildren = newNode.props.children || [];
+
+    // Recursividad para los hijos
+    newChildren.forEach((child, i) => {
+      if (oldChildren[i]) {
+        diff(oldChildren[i], child, oldNode);
+      } else {
+        container.appendChild(createRealDOM(child));
+      }
     });
-  
-    container?.appendChild(actualDOMElement); // Happens once, unless the DOM already exists and we just need to replace something on the child element.
-  };
-  
+  }
+
 
 

@@ -1,4 +1,4 @@
-import { AppStore, Actions, miniFramework, render } from "./index.js";
+import { AppStore, Actions, miniFramework, render } from "./src/index.js";
 
 // Crea un componente de lista dinámica
 const ItemList = () => {
