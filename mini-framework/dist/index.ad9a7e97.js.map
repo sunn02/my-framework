@@ -1,0 +1,1 @@
+{"mappings":"AAAA,MAAMA,aACFC,cAAAC,aAAA,CADJ,MAAA;IACQC,WAAU;AAAU,GAAC","sources":["index.tsx"],"sourcesContent":["const jsxElement = (\n    <h1 className=\"greeting\">\n        Hello, world!\n    </h1>\n)\n\n"],"names":["jsxElement","MiniFramework","createElement","className"],"version":3,"file":"index.ad9a7e97.js.map","sourceRoot":"/__parcel_source_root/"}
