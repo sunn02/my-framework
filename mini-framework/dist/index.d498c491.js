@@ -596,16 +596,16 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
 }
 
 },{}],"g9R30":[function(require,module,exports,__globalThis) {
-var _indexJs = require("./src/index.js");
+var _frameworkJs = require("./src/framework.js");
 // Crea un componente de lista dinámica
 const ItemList = ()=>{
-    const state = (0, _indexJs.AppStore).getState(); // Obtiene el estado actual
-    return (0, _indexJs.miniFramework).createElement("div", null, (0, _indexJs.miniFramework).createElement("h1", null, "Dynamic Item List"), (0, _indexJs.miniFramework).createElement("ul", null, ...state.items.map((item, index)=>(0, _indexJs.miniFramework).createElement("li", {
+    const state = (0, _frameworkJs.AppStore).getState(); // Obtiene el estado actual
+    return (0, _frameworkJs.miniFramework).createElement("div", null, (0, _frameworkJs.miniFramework).createElement("h1", null, "Dynamic Item List"), (0, _frameworkJs.miniFramework).createElement("ul", null, ...state.items.map((item, index)=>(0, _frameworkJs.miniFramework).createElement("li", {
             key: index
-        }, item))), (0, _indexJs.miniFramework).createElement("button", {
+        }, item))), (0, _frameworkJs.miniFramework).createElement("button", {
         onClick: ()=>{
             const newItem = prompt("Enter a new item:");
-            if (newItem) (0, _indexJs.Actions).addItem(newItem); // Agrega el nuevo ítem al estado
+            if (newItem) (0, _frameworkJs.Actions).addItem(newItem); // Agrega el nuevo ítem al estado
         }
     }, "Add Item"));
 };
@@ -613,10 +613,10 @@ const ItemList = ()=>{
 const renderApp = ()=>{
     const container = document.getElementById("root");
     container.innerHTML = ""; // Limpia el contenedor antes de renderizar
-    (0, _indexJs.render)(ItemList(), container);
+    (0, _frameworkJs.render)(ItemList(), container);
 };
 // Suscribirse a los cambios de estado
-(0, _indexJs.AppStore).subscribe(renderApp);
+(0, _frameworkJs.AppStore).subscribe(renderApp);
 // Render inicial
 renderApp(); // // Usando JSX para crear el árbol del DOM virtual
  // const element = (
@@ -629,7 +629,7 @@ renderApp(); // // Usando JSX para crear el árbol del DOM virtual
  // const container = document.getElementById("root");
  // render(element, container);
 
-},{"./src/index.js":"8lqZg"}],"8lqZg":[function(require,module,exports,__globalThis) {
+},{"./src/framework.js":"2UU87"}],"2UU87":[function(require,module,exports,__globalThis) {
 // --- Store ---
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
@@ -732,7 +732,6 @@ function diff(oldNode, newNode, container) {
     }
     const oldChildren = oldNode.childNodes || [];
     const newChildren = newNode.props.children || [];
-    // Recursividad para los hijos
     newChildren.forEach((child, i)=>{
         if (oldChildren[i]) diff(oldChildren[i], child, oldNode);
         else container.appendChild(createRealDOM(child));

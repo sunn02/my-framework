@@ -596,30 +596,147 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
 }
 
 },{}],"bB7Pu":[function(require,module,exports,__globalThis) {
-var _miniFrameworkJs = require("./miniFramework.js");
-const element = (0, _miniFrameworkJs.MiniFramework).createElement("h1", null, "Hello, MiniFramework!");
-console.log(element);
+var _frameworkJs = require("./src/framework.js");
+// Crea un componente de lista dinámica
+const ItemList = ()=>{
+    const state = (0, _frameworkJs.AppStore).getState(); // Obtiene el estado actual
+    return (0, _frameworkJs.miniFramework).createElement("div", null, (0, _frameworkJs.miniFramework).createElement("h1", null, "Dynamic Item List"), (0, _frameworkJs.miniFramework).createElement("ul", null, ...state.items.map((item, index)=>(0, _frameworkJs.miniFramework).createElement("li", {
+            key: index
+        }, item))), (0, _frameworkJs.miniFramework).createElement("button", {
+        onClick: ()=>{
+            const newItem = prompt("Enter a new item:");
+            if (newItem) (0, _frameworkJs.Actions).addItem(newItem); // Agrega el nuevo ítem al estado
+        }
+    }, "Add Item"));
+};
+// Función para renderizar la aplicación
+const renderApp = ()=>{
+    const container = document.getElementById("root");
+    container.innerHTML = ""; // Limpia el contenedor antes de renderizar
+    (0, _frameworkJs.render)(ItemList(), container);
+};
+// Suscribirse a los cambios de estado
+(0, _frameworkJs.AppStore).subscribe(renderApp);
+// Render inicial
+renderApp(); // // Usando JSX para crear el árbol del DOM virtual
+ // const element = (
+ //   <h1>
+ //     Hello, <span>MiniFramework!</span>
+ //   </h1>
+ // );
+ // console.log(element);  // Verás la estructura del Virtual DOM en la consola
+ // // Renderizar el elemento en el contenedor
+ // const container = document.getElementById("root");
+ // render(element, container);
 
-},{"./miniFramework.js":"fGmR7"}],"fGmR7":[function(require,module,exports,__globalThis) {
+},{"./src/framework.js":"2UU87"}],"2UU87":[function(require,module,exports,__globalThis) {
+// --- Store ---
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "MiniFramework", ()=>MiniFramework);
-const MiniFramework = {
+parcelHelpers.export(exports, "AppStore", ()=>AppStore);
+parcelHelpers.export(exports, "Actions", ()=>Actions);
+parcelHelpers.export(exports, "dispatch", ()=>dispatch);
+parcelHelpers.export(exports, "miniFramework", ()=>miniFramework);
+parcelHelpers.export(exports, "render", ()=>render);
+const AppStore = {
+    state: {
+        items: []
+    },
+    listeners: [],
+    getState () {
+        return this.state;
+    },
+    subscribe (listener) {
+        this.listeners.push(listener);
+    },
+    setState (newState) {
+        this.state = {
+            ...this.state,
+            ...newState
+        };
+        this.listeners.forEach((listener)=>listener());
+    }
+};
+const Actions = {
+    addItem (item) {
+        const currentState = AppStore.getState();
+        AppStore.setState({
+            items: [
+                ...currentState.items,
+                item
+            ]
+        });
+    }
+};
+const dispatch = (action)=>{
+    const currentState = AppStore.getState();
+    switch(action.type){
+        case "ADD_ITEM":
+            AppStore.setState({
+                items: [
+                    ...currentState.items,
+                    action.payload
+                ]
+            });
+            break;
+        default:
+            console.warn("Unknown action:", action);
+    }
+};
+const miniFramework = {
     createElement (type, props, ...children) {
         return {
             type,
             props: {
                 ...props,
-                children: children.map((child)=>typeof child === "object" ? child : {
-                        type: "TEXT_ELEMENT",
-                        props: {
-                            nodeValue: child
-                        }
-                    })
+                children: children.length ? children : []
             }
         };
     }
 };
+const render = (frameworkEl, container)=>{
+    if (!container) return;
+    diff(container._virtualDOM, frameworkEl, container);
+    container._virtualDOM = frameworkEl; // Store the new virtual DOM for diffing later
+};
+function createRealDOM(node) {
+    if (typeof node === 'string' || typeof node === 'number') return document.createTextNode(node);
+    const domElement = document.createElement(node.type);
+    Object.keys(node.props).filter((key)=>key !== 'children').forEach((prop)=>{
+        if (prop.startsWith('on')) {
+            const event = prop.substring(2).toLowerCase();
+            domElement.addEventListener(event, node.props[prop]);
+        } else domElement[prop] = node.props[prop];
+    });
+    node.props.children.forEach((child)=>{
+        domElement.appendChild(createRealDOM(child));
+    });
+    return domElement;
+}
+function diff(oldNode, newNode, container) {
+    if (!oldNode && newNode) {
+        container.appendChild(createRealDOM(newNode));
+        return;
+    }
+    if (!newNode) {
+        container.removeChild(oldNode);
+        return;
+    }
+    if (typeof oldNode !== typeof newNode || oldNode.type !== newNode.type) {
+        container.replaceChild(createRealDOM(newNode), oldNode);
+        return;
+    }
+    if (typeof newNode === 'string' || typeof newNode === 'number') {
+        if (oldNode.nodeValue !== newNode) oldNode.nodeValue = newNode;
+        return;
+    }
+    const oldChildren = oldNode.childNodes || [];
+    const newChildren = newNode.props.children || [];
+    newChildren.forEach((child, i)=>{
+        if (oldChildren[i]) diff(oldChildren[i], child, oldNode);
+        else container.appendChild(createRealDOM(child));
+    });
+}
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gkKU3":[function(require,module,exports,__globalThis) {
 exports.interopDefault = function(a) {
