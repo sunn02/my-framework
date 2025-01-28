@@ -26,31 +26,11 @@ function createTextElement(text){
 }
 
 function diff(oldElement, newElement) {
-  // If the types are different, replace the old element entirely
-  if (oldElement.type !== newElement.type) {
-    return true; 
-  }
-
-  // If it's a text element, check if the content is different
-  if (oldElement.type === "TEXT_ELEMENT" && oldElement.props.nodeValue !== newElement.props.nodeValue) {
-    return true; 
-  }
-
-  // Check if the props are different (excluding children)
-  const oldProps = oldElement.props || {};
-  const newProps = newElement.props || {};
-
-  const keys = new Set([...Object.keys(oldProps), ...Object.keys(newProps)]);
-  for (let key of keys) {
-    if (key !== "children" && oldProps[key] !== newProps[key]) {
-      return true; 
-    }
-  }
-
-  return false;
+  return oldElement.type !== newElement.type || oldElement.props.nodeValue !== newElement.props.nodeValue;
 }
 
 function render(element, container, oldElement = null) {
+  const children = element.props.children || [];
   // TODO create dom nodes
   const dom = 
     element.type == "TEXT_ELEMENT"
@@ -81,8 +61,9 @@ function render(element, container, oldElement = null) {
 
     
     // We recursively do the same for each child
-    element.props.children.forEach((child, index) => {
-      render(child, dom, oldElement ? oldElement.props.children[index] : null);
+    children.forEach((child, index) => {
+      const oldChild = oldElement && oldElement.props.children && oldElement.props.children[index]; 
+      render(child, dom, oldChild || null);
     });
 
     if (!oldElement) {
@@ -92,15 +73,62 @@ function render(element, container, oldElement = null) {
     element.dom = dom;
 }
 
+// Gestion de estado implementando arquitectura flux
+// Action Creator --> Dispatcher --> Store --> View 
+
+function createAction(type, payload) {
+  return { type, payload };
+}
+
+let state = {
+  tasks: []
+}
+
+function store(state, action){
+  switch (action.type){
+    case 'ADD_TASK':
+      return { ...state, tasks: [...state.tasks, action.payload]};
+    ;
+    default:
+      return state;
+  }
+}
+
+function dispatch(action){
+  const newState = store(state, action)
+  state = newState
+  renderApp()
+}
 
 
-/* @jsx miniFramework.createElement */
+//Component
+const taskItems = state.tasks.map(task => 
+  <li>{task}</li>
+);
+  /* @jsx miniFramework.createElement */
 const element = (
   <div id="foo">
-  <a>bar</a>
-  <b></b>
+  <h1>Hello miniFramework!</h1>
+    <div id="add">
+      <input type="text" id="taskInput" placeholder="Add a new Task"></input>
+      <button onClick={handleAddTask}>Agregar Tarea</button>
+    </div>
+    <ul>
+      {taskItems}
+    </ul>
   </div>
 )
+
+
+function handleAddTask() {
+  const input = document.getElementById('taskInput');
+  console.log(input)
+  const task = input.value.trim();
+  if (task) {
+    dispatch(createAction('ADD_TASK', task));
+    input.value = ''; // Limpiar el campo de texto después de agregar la tarea
+  }
+}
 
 // const element = miniFramework.createElement(
 //     "div",
@@ -108,7 +136,6 @@ const element = (
 //     miniFramework.createElement("a", null, "bar"),
 //     miniFramework.createElement("b")
 // )
-
 
 const container = document.getElementById("root")
 miniFramework.render(element, container)
