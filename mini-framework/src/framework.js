@@ -1,141 +1,121 @@
 const miniFramework = {
-  createElement,
-  render,
-}
-
-function createElement(type, props, ...children) {
-  return {
-      type,
-      props: {
-          ...props,
-          children: children.map(child =>
-            typeof child === 'object' ? child : createTextElement(child)
-          ),
-      }
+    createElement,
+    render,
   }
-}
-
-function createTextElement(text){
-  return {
-      type: "TEXT_ELEMENT",
-      props: {
-          nodeValue: text,
-          children: []
-      },
+  
+  function createElement(type, props, ...children) {
+    return {
+        type,
+        props: {
+            ...props,
+            children: children.map(child =>
+              typeof child === 'object' ? child : createTextElement(child)
+            ),
+        }
+    }
   }
-}
+  
+  function createTextElement(text){
+    return {
+        type: "TEXT_ELEMENT",
+        props: {
+            nodeValue: text,
+            children: []
+        },
+    }
+  }
+  
+  function createAction(type, payload) {
+    return { type, payload };
+  }
+  
+  let state = {
+    tasks: []
+  }
+  
+  function store(state, action){
+    switch (action.type){
+      case 'ADD_TASK':
+        return { ...state, tasks: [...state.tasks, action.payload]};
+      ;
+      default:
+        return state;
+    }
+  }
 
-function diff(oldElement, newElement) {
-  return oldElement.type !== newElement.type || oldElement.props.nodeValue !== newElement.props.nodeValue;
-}
-
-function render(element, container, oldElement = null) {
-  const children = element.props.children || [];
-  // TODO create dom nodes
-  const dom = 
-    element.type == "TEXT_ELEMENT"
-    ? document.createTextNode("")
-    : document.createElement(element.type);
-
-    if (oldElement) {
-      if (diff(oldElement, element)) {
-        // If diff returns true, we need to replace or update the DOM node
-        container.replaceChild(dom, oldElement.dom);
-      } else {
-        // Otherwise, just update the props (if any)
-        Object.keys(element.props).forEach(name => {
-          if (name !== "children" && element.props[name] !== oldElement.props[name]) {
-            dom[name] = element.props[name];
-          }
-        });
-      }
+  function dispatch(action){
+    const newState = store(state, action)
+    state = newState
+    console.log("Current tasks:", state.tasks);
+    renderApp()
+    }
+  
+  function render(element, container) {
+    if (element.type === "TEXT_ELEMENT") {
+        const textNode = document.createTextNode(element.props.nodeValue);
+        container.appendChild(textNode);
+        return;
     }
 
-    //Assign the element props to the node
-    const isProperty = key => key !== "children"
-    Object.keys(element.props)
-    .filter(isProperty)
-    .forEach(name => {
-      dom[name] = element.props[name]
-      })
+    const domElement = document.createElement(element.type);
 
-    
-    // We recursively do the same for each child
-    children.forEach((child, index) => {
-      const oldChild = oldElement && oldElement.props.children && oldElement.props.children[index]; 
-      render(child, dom, oldChild || null);
-    });
+    if (element.props) {
+        Object.keys(element.props)
+            .filter(key => key !== 'children')
+            .forEach(key => {
+                domElement[key] = element.props[key];
+            });
 
-    if (!oldElement) {
-      container.appendChild(dom);
+        element.props.children.forEach(child =>
+            render(child, domElement)
+        );
     }
 
-    element.dom = dom;
+    container.appendChild(domElement);
+}
+  
+
+/* @jsx miniFramework.createElement */
+function renderApp() {
+  console.log("Rendering...");
+
+  const element = (
+      <div>
+          <h1>Task Manager</h1>
+          <input id="taskInput" placeholder="Enter a task" />
+          <button
+              onclick={() => {
+                  const input = document.getElementById("taskInput");
+                  if (input.value.trim() !== "") {
+                      dispatch(createAction("ADD_TASK", input.value.trim()));
+                      input.value = "";
+                  }
+              }}
+          >
+              Add Task
+          </button>
+          <ul id="taskList">
+              {state.tasks.map((task, index) => (
+                  <li key={index}>{task}</li>
+              ))}
+          </ul>
+      </div>
+  );
+
+  const container = document.getElementById("root");
+  container.innerHTML = "";
+  miniFramework.render(element, container);
+
+
+  const taskList = document.getElementById('taskList');
+  taskList.innerHTML = ''; 
+  state.tasks.forEach((task, index) => {
+    const li = document.createElement('li');
+    li.textContent = task;
+    li.key = index;
+    taskList.appendChild(li);
+  });
 }
 
-// Gestion de estado implementando arquitectura flux
-// Action Creator --> Dispatcher --> Store --> View 
-
-function createAction(type, payload) {
-  return { type, payload };
-}
-
-let state = {
-  tasks: []
-}
-
-function store(state, action){
-  switch (action.type){
-    case 'ADD_TASK':
-      return { ...state, tasks: [...state.tasks, action.payload]};
-    ;
-    default:
-      return state;
-  }
-}
-
-function dispatch(action){
-  const newState = store(state, action)
-  state = newState
-  renderApp()
-}
-
-
-//Component
-const taskItems = state.tasks.map(task => 
-  <li>{task}</li>
-);
-  /* @jsx miniFramework.createElement */
-const element = (
-  <div id="foo">
-  <h1>Hello miniFramework!</h1>
-    <div id="add">
-      <input type="text" id="taskInput" placeholder="Add a new Task"></input>
-      <button onClick={handleAddTask}>Agregar Tarea</button>
-    </div>
-    <ul>
-      {taskItems}
-    </ul>
-  </div>
-)
-
-
-function handleAddTask() {
-  const input = document.getElementById('taskInput');
-  console.log(input)
-  const task = input.value.trim();
-  if (task) {
-    dispatch(createAction('ADD_TASK', task));
-    input.value = ''; // Limpiar el campo de texto después de agregar la tarea
-  }
-}
-
-// const element = miniFramework.createElement(
-//     "div",
-//     { id: "foo" },
-//     miniFramework.createElement("a", null, "bar"),
-//     miniFramework.createElement("b")
-// )
-
-const container = document.getElementById("root")
-miniFramework.render(element, container)
+const container = document.getElementById("root");
+renderApp(); 

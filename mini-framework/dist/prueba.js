@@ -95,4 +95,4 @@ function renderApp() {
   });
 }
 const container = document.getElementById("root");
-renderApp();
+renderApp(); // Initial render
