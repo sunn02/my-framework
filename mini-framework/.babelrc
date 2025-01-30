@@ -1,12 +1,12 @@
 {
-    "plugins": [
-      [
-        "@babel/plugin-transform-react-jsx",
-        {
-          "pragma": "miniFramework.createElement", 
-          "throwIfNamespace": false 
-        }
-      ]
-    ]
-  }
-  
+  "plugins": [
+    [
+      "@babel/plugin-transform-react-jsx",
+      {
+        "pragma": "miniFramework.createElement",
+        "throwIfNamespace": false
+      }
+    ],
+    "@babel/plugin-proposal-object-rest-spread"
+  ]
+}

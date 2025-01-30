@@ -1,121 +1,131 @@
-const miniFramework = {
-    createElement,
-    render,
+const initialState = {
+  items: [],  
+  newTask: "", 
+};
+
+export const AppStore = {
+  state: initialState,
+  listeners: [],
+  getState() {
+    return this.state;
+  },
+  subscribe(listener) {
+    this.listeners.push(listener);
+  },
+  setState(newState) {
+    this.state = { ...this.state, ...newState };
+    this.listeners.forEach(listener => listener());
+     console.log("Nuevo estado:", this.state);
   }
-  
-  function createElement(type, props, ...children) {
+};
+
+export const Actions = {
+  addItem(item) {
+    const currentState = AppStore.getState();
+    console.log("Estado antes de agregar:", currentState);
+    AppStore.setState({ items: [...currentState.items, item] });
+    console.log("Estado después de agregar:", AppStore.getState()); 
+  }
+};
+
+export const dispatch = (action) => {
+  const currentState = AppStore.getState();
+  switch (action.type) {
+    case "ADD_ITEM":
+      AppStore.setState({ items: [...currentState.items, action.payload] });
+      break;
+    default:
+      console.warn("Unknown action:", action);
+  }
+};
+
+
+export const miniFramework = {
+  createElement(type, props, ...children) {
     return {
-        type,
-        props: {
-            ...props,
-            children: children.map(child =>
-              typeof child === 'object' ? child : createTextElement(child)
-            ),
+      type,
+      props: {
+        ...props,
+        children: children.length ? children : []
+      }
+    };
+  }
+};
+
+
+export const render = (frameworkEl, container) => {
+  if (!container) return;
+  console.log("Rendering:", frameworkEl);
+  diff(container._virtualDOM, frameworkEl, container);
+  container._virtualDOM = frameworkEl; // Store the new virtual DOM for diffing later
+};
+
+function createRealDOM(node) {
+  if (typeof node === 'string' || typeof node === 'number') {
+    return document.createTextNode(node);
+  }
+
+  const domElement = document.createElement(node.type);
+
+  if (node.props) {
+    Object.keys(node.props)
+      .filter((key) => key !== 'children')
+      .forEach((prop) => {
+        if (prop.startsWith('on')) {
+          const event = prop.substring(2).toLowerCase();
+          domElement.addEventListener(event, node.props[prop]);
+        } else {
+          domElement[prop] = node.props[prop];
         }
-    }
-  }
-  
-  function createTextElement(text){
-    return {
-        type: "TEXT_ELEMENT",
-        props: {
-            nodeValue: text,
-            children: []
-        },
-    }
-  }
-  
-  function createAction(type, payload) {
-    return { type, payload };
-  }
-  
-  let state = {
-    tasks: []
-  }
-  
-  function store(state, action){
-    switch (action.type){
-      case 'ADD_TASK':
-        return { ...state, tasks: [...state.tasks, action.payload]};
-      ;
-      default:
-        return state;
-    }
+      });
+
+    const children = node.props.children || [];
+    children.forEach((child) => {
+      domElement.appendChild(createRealDOM(child));
+    });
   }
 
-  function dispatch(action){
-    const newState = store(state, action)
-    state = newState
-    console.log("Current tasks:", state.tasks);
-    renderApp()
-    }
-  
-  function render(element, container) {
-    if (element.type === "TEXT_ELEMENT") {
-        const textNode = document.createTextNode(element.props.nodeValue);
-        container.appendChild(textNode);
-        return;
-    }
-
-    const domElement = document.createElement(element.type);
-
-    if (element.props) {
-        Object.keys(element.props)
-            .filter(key => key !== 'children')
-            .forEach(key => {
-                domElement[key] = element.props[key];
-            });
-
-        element.props.children.forEach(child =>
-            render(child, domElement)
-        );
-    }
-
-    container.appendChild(domElement);
+  return domElement;
 }
-  
-
-/* @jsx miniFramework.createElement */
-function renderApp() {
-  console.log("Rendering...");
-
-  const element = (
-      <div>
-          <h1>Task Manager</h1>
-          <input id="taskInput" placeholder="Enter a task" />
-          <button
-              onclick={() => {
-                  const input = document.getElementById("taskInput");
-                  if (input.value.trim() !== "") {
-                      dispatch(createAction("ADD_TASK", input.value.trim()));
-                      input.value = "";
-                  }
-              }}
-          >
-              Add Task
-          </button>
-          <ul id="taskList">
-              {state.tasks.map((task, index) => (
-                  <li key={index}>{task}</li>
-              ))}
-          </ul>
-      </div>
-  );
-
-  const container = document.getElementById("root");
-  container.innerHTML = "";
-  miniFramework.render(element, container);
 
 
-  const taskList = document.getElementById('taskList');
-  taskList.innerHTML = ''; 
-  state.tasks.forEach((task, index) => {
-    const li = document.createElement('li');
-    li.textContent = task;
-    li.key = index;
-    taskList.appendChild(li);
+function diff(oldNode, newNode, container) {
+  if (!oldNode && newNode) {
+    container.appendChild(createRealDOM(newNode)); 
+    return;
+  }
+
+  if (!newNode) {
+    container.removeChild(oldNode);
+    return;
+  }
+
+  if (typeof oldNode !== typeof newNode || oldNode.type !== newNode.type) {
+    container.replaceChild(createRealDOM(newNode), oldNode);
+    return;
+  }
+
+  if (typeof newNode === 'string' || typeof newNode === 'number') {
+    if (oldNode.nodeValue !== newNode) {
+      oldNode.nodeValue = newNode;
+    }
+    return;
+  }
+
+  const oldChildren = oldNode.childNodes || [];
+  const newChildren = newNode.props.children || [];
+
+  while (oldChildren.length > newChildren.length) {
+    oldNode.removeChild(oldNode.lastChild);
+  }
+
+  newChildren.forEach((child, i) => {
+    if (oldChildren[i]) {
+      diff(oldChildren[i], child, oldNode);
+    } else {
+      container.appendChild(createRealDOM(child));
+    }
   });
 }
 
-const container = document.getElementById("root");
-renderApp(); 
+
